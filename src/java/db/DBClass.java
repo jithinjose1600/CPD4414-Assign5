@@ -24,7 +24,7 @@ public class DBClass {
         Connection conn = null;
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            String jdbc = "jdbc:mysql://JITHZ/PRODUCTS";
+            String jdbc = "jdbc:mysql://localhost/JITHZ";
             conn = DriverManager.getConnection(jdbc, "root", "");
         } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(DBClass.class.getName()).log(Level.SEVERE, null, ex);

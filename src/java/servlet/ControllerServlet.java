@@ -49,15 +49,11 @@ public class ControllerServlet extends HttpServlet{
             }
             
             ResultSet rs = pstmt.executeQuery();
-            if(rs.next())
+            if(!rs.wasNull())
             {
               sb.append("[");
             while (rs.next()) {
-                
-                //out.println(rs.getString("ProductID")+rs.getString("Name")+rs.getString("Description")+rs.getString("Quantity"));
-                sb.append(String.format("%s%s%s%s", rs.getInt("ProductID"), rs.getString("Name"), rs.getString("Description"), rs.getInt("Quantity")));
-                //
-                
+                sb.append(String.format("{ \"productId\" : "+ rs.getInt("ProductID")+", \"name\" : \""+rs.getString("Name")+"\", \"description\" : \""+rs.getString("Description")+"\", \"quantity\" : "+rs.getInt("Quantity")+" },"));   
             }
             sb.append("]");
             out.println(sb.toString());
