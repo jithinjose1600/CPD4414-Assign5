@@ -32,6 +32,7 @@ public class ControllerServlet extends HttpServlet{
         
        StringBuilder sb = new StringBuilder();
        String query=null;
+       int rowCount=0;
         PrintWriter out = res.getWriter();
         try (Connection conn = DBClass.getConnection()) {
             
@@ -47,13 +48,22 @@ public class ControllerServlet extends HttpServlet{
             }
             
             ResultSet rs = pstmt.executeQuery();
-            if(!rs.wasNull())
-            {
-              sb.append("[");
             while (rs.next()) {
-                sb.append(String.format("{ \"productId\" : "+ rs.getInt("ProductID")+", \"name\" : \""+rs.getString("Name")+"\", \"description\" : \""+rs.getString("Description")+"\", \"quantity\" : "+rs.getInt("Quantity")+" },"));   
+                if(rowCount>0)
+                {
+                    sb.append(",\n ");
+                }
+                sb.append(String.format("{ \"productId\" : "+ rs.getInt("ProductID")+", \"name\" : \""+rs.getString("Name")+"\", \"description\" : \""+rs.getString("Description")+"\", \"quantity\" : "+rs.getInt("Quantity")+" }"));   
+                rowCount+=1;
             }
-            sb.append("]");
+            if(rowCount>1)
+            {
+                out.print("[");
+                out.print(sb.toString());
+                out.print("]");
+            }
+            else
+            {
             out.println(sb.toString());
             }
             
