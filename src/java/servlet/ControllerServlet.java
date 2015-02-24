@@ -132,6 +132,35 @@ public class ControllerServlet extends HttpServlet{
                out.println("Error: Not enough data to input. Please use a URL of the form /servlet?id=XX&name=XXX&description=XXX&quantity=XX");
                    }
     } 
- 
+    
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse res) throws IOException
+    {
+        PrintWriter out=res.getWriter();
+        String query=null;
+        int result=0;
+        if(req.getParameter("id")!=null)
+        {
+            String id=req.getParameter("id");
+        try (Connection conn = DBClass.getConnection()) {
+                query="DELETE FROM PRODUCTS WHERE ProductID=?";
+                PreparedStatement pstmt = conn.prepareStatement(query);
+                pstmt.setString(1, id);
+                result=pstmt.executeUpdate();
+                if(result>0)
+                {
+                   out.println("Successfully deleted!!");
+                }
+                else
+                {
+                    res.setStatus(500); 
+                }
+                 } catch (SQLException ex) {
+            Logger.getLogger(ControllerServlet.class.getName()).log(Level.SEVERE, null, ex);
+        }
+            } else {
+               out.println("Error: Not enough data to input. Please use a URL of the form /servlet?id=XX");
+                   }
+    } 
 
 }
