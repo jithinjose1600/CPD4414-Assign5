@@ -153,18 +153,37 @@ public class ControllerServlet {
     }
     
    @PUT
-    protected void doPut(HttpServletRequest req, HttpServletResponse res) throws IOException
+   @Path("{id}")
+   @Consumes("{application/json}")
+    protected void doPut(@PathParam("id") String id, String str)
     {
-        PrintWriter out=res.getWriter();
-        Set<String> keySet=req.getParameterMap().keySet();
-        String query=null;
-        int result=0;
-        if(keySet.contains("id") && keySet.contains("name") && keySet.contains("description") && keySet.contains("quantity"))
-        {
-            String id=req.getParameter("id");
-            String name=req.getParameter("name");
-            String description=req.getParameter("description");
-            String quantity=req.getParameter("quantity");
+        JsonParser parser = Json.createParser(new StringReader(str));
+        Map<String, String> map = new HashMap<>();
+        String key = "", value;
+         while (parser.hasNext()) {
+             JsonParser.Event evt = parser.next();
+            switch (evt) {
+                case KEY_NAME:
+                    key = parser.getString();
+                    break;
+                case VALUE_STRING:
+                    value = parser.getString();
+                    map.put(key, value);
+                    break;
+                case VALUE_FALSE: case VALUE_NULL:
+                case VALUE_NUMBER: 
+                     value=Integer.toString(parser.getInt());
+                    map.put(key, value);
+                    break;
+                case VALUE_TRUE:
+                    map.put(key, "Error: Not String Value");
+                    break;
+            }
+        }
+         String name=map.get("name");
+         String description=map.get("description");
+         String quantity=map.get("quantity");
+         String query="";
         try (Connection conn = DBClass.getConnection()) {
                 query="UPDATE PRODUCTS SET Name=?, Description=?, Quantity=? WHERE ProductID=?";
                 PreparedStatement pstmt = conn.prepareStatement(query);
@@ -172,21 +191,12 @@ public class ControllerServlet {
                 pstmt.setString(2, description);
                 pstmt.setString(3, quantity);
                 pstmt.setString(4, id);
-                result=pstmt.executeUpdate();
-                if(result>0)
-                {
-                   out.println("Successfully updated!!");
-                }
-                else
-                {
-                    res.setStatus(500); 
-                }
+                pstmt.executeUpdate();
+               
                  } catch (SQLException ex) {
             Logger.getLogger(ControllerServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
-            } else {
-               out.println("Error: Not enough data to input. Please use a URL of the form /servlet?id=XX&name=XXX&description=XXX&quantity=XX");
-                   }
+            
     } 
     
     @Override
