@@ -8,14 +8,21 @@ package servlet;
 
 import db.DBClass;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.Json;
 import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonGeneratorFactory;
+import javax.json.stream.JsonParser;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -67,7 +74,7 @@ public class ControllerServlet {
     
     @GET
     @Path("{id}")
-    @Produces("application/json")
+    @Produces({"application/json"})
     public  String doGet(@PathParam("id") Integer id)  {
         StringWriter out = new StringWriter();
         JsonGeneratorFactory factory = Json.createGeneratorFactory(null);
@@ -89,47 +96,63 @@ public class ControllerServlet {
               .writeEnd();
         gen.close();
                 }
+                else{
+                    return "Invalid Id..";
+                }
                 } catch (SQLException ex) {
             Logger.getLogger(ControllerServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
         return out.toString();
     }
-   /* }
-     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Set<String> keySet = request.getParameterMap().keySet(); 
-        PrintWriter out = response.getWriter();
+   
+    @POST
+    @Consumes("application/json")
+    public void doPost(String str) {
+        JsonParser parser = Json.createParser(new StringReader(str));
+        Map<String, String> map = new HashMap<>();
+        String key = "", value;
+         while (parser.hasNext()) {
+             JsonParser.Event evt = parser.next();
+            switch (evt) {
+                case KEY_NAME:
+                    key = parser.getString();
+                    break;
+                case VALUE_STRING:
+                    value = parser.getString();
+                    map.put(key, value);
+                    break;
+                case VALUE_FALSE: case VALUE_NULL:
+                case VALUE_NUMBER: 
+                     value=Integer.toString(parser.getInt());
+                    map.put(key, value);
+                    break;
+                case VALUE_TRUE:
+                    map.put(key, "Error: Not String Value");
+                    break;
+            }
+        }
+         String name=map.get("name");
+         String description=map.get("description");
+         String quantity=map.get("quantity");
         String query=null;
-        int res=0;
-        if (keySet.contains("name") && keySet.contains("description") && keySet.contains("quantity")) {               
-                String name = request.getParameter("name");
-                String description= request.getParameter("description");
-                String quantity=request.getParameter("quantity");
+ 
+                      
                 try (Connection conn = DBClass.getConnection()) {
                 query="INSERT INTO PRODUCTS (Name, Description, Quantity) VALUES (?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(query);
                 pstmt.setString(1, name);
                 pstmt.setString(2, description);
                 pstmt.setString(3, quantity);
-                res=pstmt.executeUpdate();
-                if(res>0)
-                {
-                   out.println("Successfully inserted!!");
-                }
-                else
-                {
-                    response.setStatus(500); 
-                }
+                pstmt.executeUpdate();
+                
                  } catch (SQLException ex) {
             Logger.getLogger(ControllerServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
-            } else {
-               out.println("Error: Not enough data to input. Please use a URL of the form /servlet?name=XXX&description=XXX&quantity=XX");
-                   }
+            
             
     }
     
-    @Override
+   @PUT
     protected void doPut(HttpServletRequest req, HttpServletResponse res) throws IOException
     {
         PrintWriter out=res.getWriter();
