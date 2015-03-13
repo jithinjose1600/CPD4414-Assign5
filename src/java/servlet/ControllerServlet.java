@@ -144,35 +144,14 @@ public class ControllerServlet {
    @PUT
    @Path("{id}")
    @Consumes("{application/json}")
-    protected void doPut(@PathParam("id") String id, String str)
+    protected Response doPut(@PathParam("id") String id, JsonObject obj)
     {
-        JsonParser parser = Json.createParser(new StringReader(str));
-        Map<String, String> map = new HashMap<>();
-        String key = "", value;
-         while (parser.hasNext()) {
-             JsonParser.Event evt = parser.next();
-            switch (evt) {
-                case KEY_NAME:
-                    key = parser.getString();
-                    break;
-                case VALUE_STRING:
-                    value = parser.getString();
-                    map.put(key, value);
-                    break;
-                case VALUE_FALSE: case VALUE_NULL:
-                case VALUE_NUMBER: 
-                     value=Integer.toString(parser.getInt());
-                    map.put(key, value);
-                    break;
-                case VALUE_TRUE:
-                    map.put(key, "Error: Not String Value");
-                    break;
-            }
-        }
-         String name=map.get("name");
-         String description=map.get("description");
-         String quantity=map.get("quantity");
+        
+         String name=obj.getString("name");
+         String description=obj.getString("description");
+         String quantity=obj.getString("quantity");
          String query="";
+         int res=0;
         try (Connection conn = DBClass.getConnection()) {
                 query="UPDATE PRODUCTS SET Name=?, Description=?, Quantity=? WHERE ProductID=?";
                 PreparedStatement pstmt = conn.prepareStatement(query);
@@ -180,12 +159,19 @@ public class ControllerServlet {
                 pstmt.setString(2, description);
                 pstmt.setString(3, quantity);
                 pstmt.setString(4, id);
-                pstmt.executeUpdate();
+                res=pstmt.executeUpdate();
                
                  } catch (SQLException ex) {
             Logger.getLogger(ControllerServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
-            
+             if(res<=0)
+          {
+              return Response.status(500).build();
+          }
+          else 
+          {
+              return Response.ok("http://localhost:8080/CPD4414-Assign4/webresources/servlet/"+id).build();
+          }
     } 
     
     @DELETE
