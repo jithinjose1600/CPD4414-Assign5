@@ -7,7 +7,6 @@
 package servlet;
 
 import db.DBClass;
-import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.sql.*;
@@ -16,6 +15,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.Json;
+import javax.json.JsonObject;
 import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonGeneratorFactory;
 import javax.json.stream.JsonParser;
@@ -27,6 +27,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Response;
 
 
 /**
@@ -38,54 +39,46 @@ public class ControllerServlet {
     
     @GET
     @Produces("application/json")
-    public  String doGetAll()  {
-        int rowCount=0;
-        StringBuilder sb= new StringBuilder();
+    public  String doGet()  {
+        StringWriter out = new StringWriter();
+        JsonGeneratorFactory factory = Json.createGeneratorFactory(null);
+        JsonGenerator gen = factory.createGenerator(out);
         String query="SELECT * FROM PRODUCTS";
         try (Connection conn = DBClass.getConnection()) {            
-            PreparedStatement pstmt=null;               
+            PreparedStatement pstmt;               
                 pstmt = conn.prepareStatement(query);
                 ResultSet rs = pstmt.executeQuery();
+                   gen.writeStartArray();
                 while (rs.next()) {
-                if(rowCount>0)
-                {
-                    sb.append(",\n ");
-                }
-                sb.append(String.format("{ \"productId\" : "+ rs.getInt("ProductID")+", \"name\" : \""+rs.getString("Name")+"\", \"description\" : \""+rs.getString("Description")+"\", \"quantity\" : "+rs.getInt("Quantity")+" }"));   
-                rowCount+=1;
+                    gen.writeStartObject()
+                            .write("productId", rs.getInt("ProductID"))
+                .write("name", rs.getString("Name"))
+                        .write("description", rs.getString("Description"))
+                        .write("quantity", rs.getInt("Quantity"))
+              .writeEnd();              
             }
-            
-          
+            gen.writeEnd();
+        gen.close(); 
           } catch (SQLException ex) {
             Logger.getLogger(ControllerServlet.class.getName()).log(Level.SEVERE, null, ex);
         }  
-         if(rowCount>1)
-            {
-                String products="["+sb.toString()+"]";
-                //return "[";
-                //return sb.toString();
-                return products;
-            }
-            else
-            {
-            return  sb.toString();
-            } 
+        return out.toString();
     } 
         
     
     @GET
     @Path("{id}")
     @Produces({"application/json"})
-    public  String doGet(@PathParam("id") Integer id)  {
+    public  String doGet(@PathParam("id") int id)  {
         StringWriter out = new StringWriter();
         JsonGeneratorFactory factory = Json.createGeneratorFactory(null);
         JsonGenerator gen = factory.createGenerator(out);
         try (Connection conn = DBClass.getConnection()) {
             
-            PreparedStatement pstmt=null;
-                String query="SELECT * FROM PRODUCTS WHERE ProductId=?";
+            PreparedStatement pstmt;
+                String query="SELECT * FROM PRODUCTS WHERE ProductId = ?";
                 pstmt = conn.prepareStatement(query);
-                pstmt.setString(1, String.valueOf(id));
+                pstmt.setInt(1, id);
                 ResultSet rs = pstmt.executeQuery();
                 if(rs.next())
                 {
@@ -108,48 +101,43 @@ public class ControllerServlet {
    
     @POST
     @Consumes("application/json")
-    public void doPost(String str) {
-        JsonParser parser = Json.createParser(new StringReader(str));
-        Map<String, String> map = new HashMap<>();
-        String key = "", value;
-         while (parser.hasNext()) {
-             JsonParser.Event evt = parser.next();
-            switch (evt) {
-                case KEY_NAME:
-                    key = parser.getString();
-                    break;
-                case VALUE_STRING:
-                    value = parser.getString();
-                    map.put(key, value);
-                    break;
-                case VALUE_FALSE: case VALUE_NULL:
-                case VALUE_NUMBER: 
-                     value=Integer.toString(parser.getInt());
-                    map.put(key, value);
-                    break;
-                case VALUE_TRUE:
-                    map.put(key, "Error: Not String Value");
-                    break;
-            }
-        }
-         String name=map.get("name");
-         String description=map.get("description");
-         String quantity=map.get("quantity");
-        String query=null;
+    public Response doPost(JsonObject obj) {
  
+         String name=obj.getString("name");
+         String description=obj.getString("description");
+         String quantity=obj.getString("quantity");
+
+        int res=0;
+        int pid=0;
                       
                 try (Connection conn = DBClass.getConnection()) {
-                query="INSERT INTO PRODUCTS (Name, Description, Quantity) VALUES (?, ?, ?)";
+                String query="INSERT INTO PRODUCTS (Name, Description, Quantity) VALUES (?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(query);
                 pstmt.setString(1, name);
                 pstmt.setString(2, description);
                 pstmt.setString(3, quantity);
-                pstmt.executeUpdate();
-                
+                res=pstmt.executeUpdate();
+                String qry="SELECT ProductId FROM PRODUCTS WHERE  Name= ? and Description= ?";
+                pstmt = conn.prepareStatement(qry);
+                pstmt.setString(1, name);
+                pstmt.setString(2, description);
+                ResultSet rs = pstmt.executeQuery();
+                if(rs.next())
+                {
+                    pid=rs.getInt("ProductId");
+                }
+              
                  } catch (SQLException ex) {
             Logger.getLogger(ControllerServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
-            
+          if(res<=0)
+          {
+              return Response.status(500).build();
+          }
+          else 
+          {
+              return Response.ok("http://localhost:8080/CPD4414-Assign4/webresources/servlet/"+pid).build();
+          }
             
     }
     
