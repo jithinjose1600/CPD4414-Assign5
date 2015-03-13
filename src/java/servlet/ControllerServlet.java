@@ -67,7 +67,6 @@ public class ControllerServlet {
         JsonGeneratorFactory factory = Json.createGeneratorFactory(null);
         JsonGenerator gen = factory.createGenerator(out);
         try (Connection conn = DBClass.getConnection()) {
-
             PreparedStatement pstmt;
             String query = "SELECT * FROM PRODUCTS WHERE ProductId = ?";
             pstmt = conn.prepareStatement(query);
@@ -93,17 +92,15 @@ public class ControllerServlet {
     @POST
     @Consumes("application/json")
     public Response doPost(JsonObject obj) {
-
         String name = obj.getString("name");
         String description = obj.getString("description");
         String quantity = obj.getString("quantity");
-
         int res = 0;
         int pid = 0;
-
         try (Connection conn = DBClass.getConnection()) {
+            PreparedStatement pstmt;
             String query = "INSERT INTO PRODUCTS (Name, Description, Quantity) VALUES (?, ?, ?)";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt = conn.prepareStatement(query);
             pstmt.setString(1, name);
             pstmt.setString(2, description);
             pstmt.setString(3, quantity);
@@ -130,8 +127,8 @@ public class ControllerServlet {
 
     @PUT
     @Path("{id}")
-    @Consumes("{application/json}")
-    protected Response doPut(@PathParam("id") String id, JsonObject obj) {
+    @Consumes({"application/json"})
+    public Response doPut(@PathParam("id") String id, JsonObject obj) {
 
         String name = obj.getString("name");
         String description = obj.getString("description");
@@ -159,8 +156,7 @@ public class ControllerServlet {
 
     @DELETE
     @Path("{id}")
-    @Consumes("{application/json}")
-    protected Response doDelete(@PathParam("id") String id) {
+    public Response doDelete(@PathParam("id") String id) {
         String query;
         int res = 0;
         try (Connection conn = DBClass.getConnection()) {
